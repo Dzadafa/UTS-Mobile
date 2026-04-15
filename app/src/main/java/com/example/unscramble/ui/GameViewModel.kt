@@ -40,7 +40,7 @@ import com.example.unscramble.data.WordEntity
 /**
  * ViewModel containing the app data and methods to process the data
  */
-class GameViewModel : ViewModel() {
+class GameViewModel(private val wordDao: WordDao) : ViewModel() {
 
     // Game UI state
     private val _uiState = MutableStateFlow(GameUiState())
@@ -152,13 +152,23 @@ class GameViewModel : ViewModel() {
     }
 
     private fun pickRandomWordAndShuffle(): String {
+        val combinedWords = allWords + customWords
         // Continue picking up a new random word until you get one that hasn't been used before
-        currentWord = allWords.random()
+        currentWord = combinedWords.random()
         return if (usedWords.contains(currentWord)) {
             pickRandomWordAndShuffle()
         } else {
             usedWords.add(currentWord)
             shuffleCurrentWord(currentWord)
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[APPLICATION_KEY] as UnscrambleApplication)
+                GameViewModel(application.database.wordDao())
+            }
         }
     }
 }

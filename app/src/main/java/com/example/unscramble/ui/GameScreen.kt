@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ package com.example.unscramble.ui
 import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -28,21 +29,29 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.shapes
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,73 +68,115 @@ import com.example.unscramble.R
 import com.example.unscramble.ui.theme.UnscrambleTheme
 
 @Composable
-fun GameScreen(gameViewModel: GameViewModel = viewModel()) {
+fun GameScreen(
+    gameViewModel: GameViewModel = viewModel(factory = GameViewModel.Factory)
+) {
     val gameUiState by gameViewModel.uiState.collectAsState()
+    var showAddWordDialog by remember { mutableStateOf(false) }
+    var newWordInput by remember { mutableStateOf("") }
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
 
-    Column(
-        modifier = Modifier
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .safeDrawingPadding()
-            .padding(mediumPadding),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-
-        Text(
-            text = stringResource(R.string.app_name),
-            style = typography.titleLarge,
-        )
-        GameLayout(
-            onUserGuessChanged = { gameViewModel.updateUserGuess(it) },
-            wordCount = gameUiState.currentWordCount,
-            userGuess = gameViewModel.userGuess,
-            onKeyboardDone = { gameViewModel.checkUserGuess() },
-            currentScrambledWord = gameUiState.currentScrambledWord,
-            isGuessWrong = gameUiState.isGuessedWordWrong,
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(mediumPadding)
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(mediumPadding),
-            verticalArrangement = Arrangement.spacedBy(mediumPadding),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = { gameViewModel.checkUserGuess() }
-            ) {
-                Text(
-                    text = stringResource(R.string.submit),
-                    fontSize = 16.sp
-                )
-            }
-
-            OutlinedButton(
-                onClick = { gameViewModel.skipWord() },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = stringResource(R.string.skip),
-                    fontSize = 16.sp
-                )
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showAddWordDialog = true }) {
+                Icon(Icons.Filled.Add, contentDescription = "Tambah Kata")
             }
         }
+    ) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues)) {
+            Column(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .verticalScroll(rememberScrollState())
+                    .safeDrawingPadding()
+                    .padding(mediumPadding),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = typography.titleLarge,
+                )
+                GameLayout(
+                    onUserGuessChanged = { gameViewModel.updateUserGuess(it) },
+                    wordCount = gameUiState.currentWordCount,
+                    userGuess = gameViewModel.userGuess,
+                    onKeyboardDone = { gameViewModel.checkUserGuess() },
+                    currentScrambledWord = gameUiState.currentScrambledWord,
+                    isGuessWrong = gameUiState.isGuessedWordWrong,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .padding(mediumPadding)
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(mediumPadding),
+                    verticalArrangement = Arrangement.spacedBy(mediumPadding),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { gameViewModel.checkUserGuess() }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.submit),
+                            fontSize = 16.sp
+                        )
+                    }
 
-        GameStatus(score = gameUiState.score, modifier = Modifier.padding(20.dp))
+                    OutlinedButton(
+                        onClick = { gameViewModel.skipWord() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = stringResource(R.string.skip),
+                            fontSize = 16.sp
+                        )
+                    }
+                }
 
-        if (gameUiState.isGameOver) {
-            FinalScoreDialog(
-                score = gameUiState.score,
-                onPlayAgain = { gameViewModel.resetGame() }
-            )
+                GameStatus(score = gameUiState.score, modifier = Modifier.padding(20.dp))
+
+                if (gameUiState.isGameOver) {
+                    FinalScoreDialog(
+                        score = gameUiState.score,
+                        onPlayAgain = { gameViewModel.resetGame() }
+                    )
+                }
+            }
         }
+    }
+
+    if (showAddWordDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddWordDialog = false },
+            title = { Text("Tambah Kata Baru") },
+            text = {
+                OutlinedTextField(
+                    value = newWordInput,
+                    onValueChange = { newWordInput = it },
+                    label = { Text("Kata") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (newWordInput.isNotBlank()) {
+                        gameViewModel.addWord(newWordInput)
+                        showAddWordDialog = false
+                        newWordInput = ""
+                    }
+                }) {
+                    Text("Simpan")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddWordDialog = false }) {
+                    Text("Batal")
+                }
+            }
+        )
     }
 }
 
