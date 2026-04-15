@@ -27,6 +27,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import com.example.unscramble.UnscrambleApplication
+import com.example.unscramble.data.WordDao
+import com.example.unscramble.data.WordEntity
 
 /**
  * ViewModel containing the app data and methods to process the data
@@ -36,6 +45,7 @@ class GameViewModel : ViewModel() {
     // Game UI state
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
+    private var customWords = mutableListOf<String>()
 
     var userGuess by mutableStateOf("")
         private set
@@ -45,7 +55,19 @@ class GameViewModel : ViewModel() {
     private lateinit var currentWord: String
 
     init {
-        resetGame()
+        viewModelScope.launch {
+            wordDao.getAllWords().collect { entities ->
+                customWords.clear()
+                customWords.addAll(entities.map { it.word })
+            }
+        }
+        resetGame()    
+    }
+
+    fun addWord(newWord: String) {
+        viewModelScope.launch {
+            wordDao.insertWord(WordEntity(word = newWord))
+        }
     }
 
     /*
